@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capability Diagnosis: Alderney &amp; Associates</title>
+<style>
+  :root {
+    --primary: #0D224F;
+    --primary-light: #16305e;
+    --accent: #00AEEF;
+    --accent-dark: #0B84B0;
+    --background: #F5F7FA;
+    --text: #1F2937;
+    --paper: #FFFFFF;
+    --line: #D8DEE8;
+    --warn: #A8592E;
+    --warn-bg: #FBEEE7;
+    --good: #146C43;
+    --good-bg: #E8F4EE;
+    --focus: #FFC93C;
+    --radius: 10px;
+    --font: 'Overpass', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.5;
+  }
+
+  body { min-height: 100vh; }
+  a { color: inherit; }
+  button { font-family: var(--font); }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .app {
+    max-width: 780px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--background);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .progress-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--primary);
+    padding: 14px 20px 12px;
+  }
+  .progress-wrap.hidden { display: none; }
+
+  .progress-label {
+    color: #C9D6EC;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .progress-track { display: flex; gap: 6px; }
+  .progress-seg { height: 5px; flex: 1; background: rgba(255,255,255,0.22); border-radius: 3px; overflow: hidden; }
+  .progress-seg > span { display: block; height: 100%; width: 0%; background: var(--accent); transition: width 0.4s ease; }
+
+  main { flex: 1; padding: 28px 20px 60px; }
+
+  .screen { display: none; animation: fade 0.35s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    margin-bottom: 6px;
+  }
+
+  h1 { font-size: 25px; color: var(--primary); margin: 0 0 12px; line-height: 1.25; }
+  h2 { font-size: 19px; color: var(--primary); margin: 0 0 10px; }
+  p { margin: 0 0 14px; }
+
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+
+  .quote-card {
+    background: var(--paper);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .quote-card .who { font-size: 13px; font-weight: 700; color: var(--primary); margin: 8px 0 0; text-transform: none; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    padding: 13px 22px; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease; width: 100%;
+  }
+  .btn:hover { background: var(--primary-light); }
+  .btn:active { transform: scale(0.99); }
+  .btn.secondary { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn.secondary:hover { background: rgba(13,34,79,0.05); }
+  .btn.accent { background: var(--accent); color: #06283D; }
+  .btn.accent:hover { filter: brightness(0.95); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Case index */
+  .case-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
+
+  .case-card {
+    background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; text-align: left; cursor: pointer; width: 100%;
+    transition: border-color 0.15s ease;
+  }
+  .case-card:hover { border-color: var(--accent); }
+  .case-card .cc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .case-card .cc-title { font-weight: 800; color: var(--primary); font-size: 16.5px; }
+  .case-card .cc-team { font-size: 12px; color: var(--accent-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .case-card .cc-teaser { font-size: 14px; color: #4B5768; }
+
+  .status-badge {
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  .status-badge.pending { background: #EEF1F5; color: #6B7686; }
+  .status-badge.complete { background: var(--good-bg); color: var(--good); }
+
+  .cc-result {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-size: 13px; color: var(--text);
+  }
+  .cc-result strong { color: var(--primary); }
+
+  .portfolio-banner {
+    background: var(--paper); border: 1.5px dashed var(--accent); border-radius: 12px;
+    padding: 16px 18px; margin-top: 18px; text-align: center;
+  }
+
+  /* Evidence dossier */
+  .dossier-tracker { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .dossier-chip {
+    font-size: 12px; padding: 6px 12px; border-radius: 20px; background: var(--paper);
+    border: 1px solid var(--line); color: #6B7686; font-weight: 600;
+  }
+  .dossier-chip.done { background: var(--good-bg); border-color: #BFE1CE; color: var(--good); }
+
+  .evidence-item { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+  .evidence-trigger {
+    width: 100%; text-align: left; background: none; border: none; padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px; font-weight: 700; color: var(--primary);
+  }
+  .evidence-trigger .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #EAF1FB; color: var(--primary); padding: 3px 8px; border-radius: 4px; font-weight: 700; }
+  .evidence-trigger .chev { margin-left: auto; transition: transform 0.2s ease; color: var(--accent); }
+  .evidence-trigger[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .evidence-trigger .check { color: var(--good); font-weight: 900; visibility: hidden; }
+  .evidence-trigger.viewed .check { visibility: visible; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  .evidence-body { padding: 0 18px 18px; display: none; font-size: 14.5px; color: var(--text); }
+  .evidence-body.open { display: block; }
+  .evidence-body ul { margin: 0; padding-left: 20px; }
+  .evidence-body li { margin-bottom: 8px; }
+
+  .option-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 4px; }
+  .option-btn {
+    text-align: left; background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px;
+    padding: 15px 16px; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .option-btn:hover { border-color: var(--accent); background: #F2FAFE; }
+  .option-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .option-btn:disabled:hover { border-color: var(--line); background: var(--paper); }
+  .option-btn .label { font-weight: 700; color: var(--primary); display: block; margin-bottom: 3px; font-size: 15.5px; }
+  .option-btn .desc { font-size: 13.5px; color: #4B5768; }
+
+  .feedback { border-radius: var(--radius); padding: 18px 20px; margin: 16px 0; font-size: 14.5px; }
+  .feedback.warn { background: var(--warn-bg); border: 1px solid #EAC8B4; }
+  .feedback.good { background: var(--good-bg); border: 1px solid #BFE1CE; }
+  .feedback .ftitle { font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .feedback.warn .ftitle { color: var(--warn); }
+  .feedback.good .ftitle { color: var(--good); }
+
+  .exhibit { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 18px; }
+  .exhibit-head { background: var(--primary); color: #fff; padding: 22px 24px; }
+  .exhibit-head .exhibit-eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  .exhibit-head h2 { color: #fff; margin: 0; font-size: 20px; }
+  .exhibit-body { padding: 22px 24px; }
+  .exhibit-row { display: grid; grid-template-columns: 120px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .exhibit-row:last-child { border-bottom: none; }
+  .exhibit-row .row-label { font-weight: 700; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 2px; }
+  .exhibit-row ul { margin: 0; padding-left: 18px; }
+  .exhibit-row li { margin-bottom: 6px; }
+  .pill { display: inline-block; background: #EAF1FB; color: var(--primary); font-weight: 700; font-size: 13px; padding: 4px 12px; border-radius: 20px; }
+  .rejected-item { margin-bottom: 8px; font-size: 13.5px; }
+  .rejected-item .why { color: #6B7686; }
+
+  .portfolio-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .portfolio-table th, .portfolio-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .portfolio-table th { color: var(--primary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  footer.credit { text-align: center; font-size: 12px; color: #8592A3; padding: 20px; }
+
+  @media (min-width: 560px) {
+    h1 { font-size: 29px; }
+    .btn { width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">
+      <span id="stageLabel">Stage 1 of 5</span>
+      <span id="caseLabel">Corporate Advisory</span>
+    </div>
+    <div class="progress-track" aria-hidden="true">
+      <div class="progress-seg"><span id="seg1"></span></div>
+      <div class="progress-seg"><span id="seg2"></span></div>
+      <div class="progress-seg"><span id="seg3"></span></div>
+      <div class="progress-seg"><span id="seg4"></span></div>
+      <div class="progress-seg"><span id="seg5"></span></div>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- SCREEN: INDEX -->
+    <section class="screen active" id="screen-index" aria-labelledby="indexHeading">
+      <div class="eyebrow">Capability diagnosis series</div>
+      <h1 id="indexHeading">Four practice groups, four capability gaps</h1>
+      <p>Alderney &amp; Associates is a mid-size professional services firm. Four practice groups have each raised a performance problem. The stakeholder in each case has a theory about the cause. Your job is to test it against the evidence, not assume it's right.</p>
+      <p>Work through each case in any order. Every case runs the same way: read the brief, review the evidence, classify the root cause, recommend an intervention, then view the resulting capability gap summary.</p>
+
+      <div class="case-grid" id="caseGrid"></div>
+
+      <div class="portfolio-banner" id="portfolioBanner" style="display:none;">
+        <p style="margin-bottom:10px;"><strong>All four cases complete.</strong> View the combined exhibit showing how the same diagnostic framework produced four different, evidence-based conclusions.</p>
+        <button class="btn accent" id="toPortfolio">View the portfolio exhibit</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: BRIEF -->
+    <section class="screen" id="screen-brief" aria-labelledby="briefHeading">
+      <div class="eyebrow" id="briefEyebrow">The brief</div>
+      <h1 id="briefHeading">A performance problem lands on your desk</h1>
+      <div id="briefBody"></div>
+      <button class="btn" id="toEvidence">Begin gathering evidence</button>
+    </section>
+
+    <!-- SCREEN: EVIDENCE -->
+    <section class="screen" id="screen-evidence" aria-labelledby="evidenceHeading">
+      <div class="eyebrow">Stage 2</div>
+      <h1 id="evidenceHeading">Build the case file</h1>
+      <p>Four evidence sources are available. Review them before classifying the root cause, a diagnosis built on partial evidence is a common way good interventions still fail.</p>
+
+      <div class="dossier-tracker" id="dossierTracker"></div>
+      <div id="evidenceList"></div>
+      <div id="evidenceGate" aria-live="polite"></div>
+
+      <button class="btn" id="toClassify" style="margin-top:8px;">Proceed to diagnosis</button>
+    </section>
+
+    <!-- SCREEN: CLASSIFY -->
+    <section class="screen" id="screen-classify" aria-labelledby="classifyHeading">
+      <div class="eyebrow">Stage 3</div>
+      <h1 id="classifyHeading">Classify the root cause</h1>
+      <p>Based on the case file, which category best explains where this performance gap actually originates?</p>
+
+      <div class="option-grid" id="classifyGrid" role="group" aria-label="Root cause options"></div>
+      <div id="classifyFeedback" aria-live="polite"></div>
+    </section>
+
+    <!-- SCREEN: INTERVENTION -->
+    <section class="screen" id="screen-intervention" aria-labelledby="interventionHeading">
+      <div class="eyebrow">Stage 4</div>
+      <h1 id="interventionHeading">Recommend the intervention</h1>
+      <p id="interventionIntro"></p>
+
+      <div class="option-grid" id="interventionGrid" role="group" aria-label="Intervention options"></div>
+      <div id="interventionFeedback" aria-live="polite"></div>
+    </section>
+
+    <!-- SCREEN: EXHIBIT -->
+    <section class="screen" id="screen-exhibit" aria-labelledby="exhibitHeading">
+      <div class="eyebrow">Stage 5</div>
+      <h1 id="exhibitHeading">Capability gap summary</h1>
+      <p>This exhibit is the standalone output of the diagnosis, the kind of one-page summary a consultant would leave with a sponsor after this process.</p>
+
+      <div id="exhibitContent"></div>
+
+      <div class="btn-row" style="display:flex; gap:10px;">
+        <button class="btn secondary" id="backToIndex" style="flex:1;">Back to case index</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: PORTFOLIO -->
+    <section class="screen" id="screen-portfolio" aria-labelledby="portfolioHeading">
+      <div class="eyebrow">Combined exhibit</div>
+      <h1 id="portfolioHeading">Capability gap portfolio</h1>
+      <p>Four practice groups, four different root causes, four different fixes. The same diagnostic framework, applied consistently, produced four distinct recommendations because the evidence pointed in four different directions.</p>
+
+      <div class="exhibit">
+        <div class="exhibit-head">
+          <div class="exhibit-eyebrow">Alderney &amp; Associates</div>
+          <h2>Capability Gap Portfolio</h2>
+        </div>
+        <div class="exhibit-body">
+          <table class="portfolio-table">
+            <thead>
+              <tr><th>Practice group</th><th>Root cause</th><th>Recommended intervention</th></tr>
+            </thead>
+            <tbody id="portfolioTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn secondary" id="portfolioBack">Back to case index</button>
+    </section>
+
+  </main>
+
+  <footer class="credit">Capability &amp; Change Portfolio. Module 1: Capability Diagnosis</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ROOT_CAUSE_DEFS = [
+    { key: "knowledge", label: "Knowledge", desc: "People don't know what to do, or how to do it well." },
+    { key: "process", label: "Process", desc: "The way work is structured, sequenced or governed creates friction or delay." },
+    { key: "motivation", label: "Motivation", desc: "People know what to do but aren't sufficiently incentivised or engaged to do it." },
+    { key: "tooling", label: "Tooling", desc: "Systems, technology or equipment limit what people can achieve." },
+    { key: "leadership", label: "Leadership", desc: "Decisions, direction or role-modelling from leaders create or sustain the problem." },
+    { key: "culture", label: "Culture", desc: "Shared norms, unwritten rules or team behaviours create or sustain the problem." }
+  ];
+
+  var CASES = [
+    {
+      id: "advisory",
+      team: "Corporate Advisory",
+      title: "The sign-off queue",
+      teaser: "Client satisfaction has dropped for three quarters running.",
+      briefWho: "Practice Lead, Corporate Advisory",
+      briefQuote: "Client satisfaction scores for Corporate Advisory have dropped for three straight quarters. Two of our key accounts raised concerns at renewal. My gut says the team's stretched and the newer associates haven't caught up. I want a fix, and I want it before the next renewal cycle.",
+      evidence: [
+        { tag: "Source A", title: "Performance data", points: [
+          "Deliverable turnaround time up 42% over the last two quarters.",
+          "Quality assurance review scores unchanged at roughly 94%, consistent with the prior year.",
+          "Team utilisation risen from 78% to 96% over the same period.",
+          "Client escalations cluster around the final sign-off stage, not the drafting stage."
+        ]},
+        { tag: "Source B", title: "Interview notes (associates and senior associates)", points: [
+          "\u201cWe know what good looks like. The bottleneck is getting things signed off.\u201d",
+          "The case management system was updated eight months ago, associates say they adapted within a few weeks.",
+          "A three-stage sign-off process was introduced after a compliance incident last year, with every stage routed to the same partner.",
+          "Associates describe waiting several days for sign-off when that partner is travelling or in back-to-back meetings."
+        ]},
+        { tag: "Source C", title: "Observation notes (shadowing a live engagement)", points: [
+          "Associates re-enter the same compliance data across two disconnected systems, adding roughly 45 minutes per file, without difficulty.",
+          "One partner's sign-off queue held 14 files waiting during a single day of shadowing.",
+          "No instance observed of an associate struggling with the technical content of the work."
+        ]},
+        { tag: "Source D", title: "Process map", points: [
+          "Draft, compliance check, then three sequential partner sign-off stages, then client delivery.",
+          "All three sign-off stages route to the same named partner role, with no delegation or parallel path.",
+          "This structure did not exist before the compliance incident eight months ago."
+        ]}
+      ],
+      correctRootCause: "process",
+      confirmText: "The evidence triangulates on the approval workflow. Turnaround has risen sharply while quality, engagement and technical understanding have all stayed constant. The bottleneck sits in how the work is sequenced and governed, not in the people doing it.",
+      rootCauseConsequences: {
+        knowledge: "Leadership approved a refresher programme on compliance standards for associates. Three months later, turnaround times were unchanged, the team already knew the standards, and the sign-off queue was exactly the length it had been before.",
+        motivation: "A team engagement initiative launched, recognising strong performers publicly. Engagement scores ticked up slightly, but turnaround times didn't move, the team had never lacked motivation, they'd been waiting on sign-off.",
+        tooling: "A new case management platform launched six months later. Data entry time fell by around 15 minutes per file, a real but modest gain, because files were still queued for three sequential sign-offs from the same partner.",
+        leadership: "A new deputy practice lead role was created to share leadership visibility across the group. Six months on, the three-stage sign-off process was untouched, and the new deputy simply inherited the same single-approver bottleneck for a subset of files.",
+        culture: "A culture survey and workshop series followed, surfacing useful themes about workload pressure, but nothing in the findings addressed the sign-off structure, and turnaround times held steady at their elevated level."
+      },
+      interventionIntro: "The root cause is confirmed as Process. Which intervention actually addresses it?",
+      interventions: [
+        { key: "training", label: "Deliver a refresher training programme", desc: "Reinforce compliance and communication standards for associates.", correct: false,
+          consequence: "Associates completed a two-day refresher on compliance standards. Three months later, turnaround times were unchanged. The team already knew the standards, the sign-off queue hadn't moved." },
+        { key: "software", label: "Procure new case management software", desc: "Replace the current system with better integration between tools.", correct: false,
+          consequence: "A new platform launched five months later. Data entry time fell modestly, but files were still queued for three sequential sign-offs from the same partner. Turnaround improved only slightly." },
+        { key: "workflow", label: "Redesign the sign-off workflow", desc: "Delegate stages, remove sequential single-approver bottlenecks, enable parallel review.", correct: true,
+          consequence: "Delegating the first two sign-off stages removed the single-approver queue without lowering the quality bar, the partner still reviews the final stage. Within a quarter, turnaround fell by around 30% and delivery-stage escalations dropped." },
+        { key: "restructure", label: "Restructure reporting lines", desc: "Add a deputy practice lead role to share leadership responsibility.", correct: false,
+          consequence: "A deputy practice lead role was created. Six months on, the three-stage sign-off process was untouched, the new deputy simply inherited the same bottleneck for a subset of files." }
+      ],
+      exhibit: {
+        symptom: "Client satisfaction scores declining for three consecutive quarters, two key accounts raised concerns at renewal.",
+        evidenceSignals: [
+          "Deliverable turnaround time up 42% over two quarters, with quality review scores unchanged.",
+          "Escalations concentrated at the sign-off stage, not at drafting or content quality.",
+          "A three-stage sequential approval process, added after a prior compliance incident, routes every file through the same partner three times.",
+          "Associates describe knowing the technical standards, the wait is for sign-off availability."
+        ],
+        rootCauseLabel: "Process",
+        rootCauseExplain: "A workflow bottleneck built into the approval structure, not a skills or engagement gap.",
+        rejected: [
+          { label: "Knowledge", why: "Quality review scores were stable throughout, associates could describe the correct standards unprompted." },
+          { label: "Tooling", why: "System friction added roughly 45 minutes per file, a minor factor against a 42% turnaround increase." },
+          { label: "Motivation", why: "No evidence of disengagement, associates raised the bottleneck themselves as a known constraint." }
+        ],
+        recommendedIntervention: "Redesign the sign-off workflow: delegate stages one and two to senior associates with partner spot-checks, retain a single final partner sign-off, and enable parallel processing where files don't depend on one another.",
+        indicators: [
+          "Deliverable turnaround time, target return to baseline within one quarter.",
+          "Sign-off queue length per partner, tracked weekly.",
+          "Client escalations at delivery stage, target sustained reduction across two renewal cycles."
+        ]
+      }
+    },
+
+    {
+      id: "audit",
+      team: "Audit",
+      title: "The ESG rejection rate",
+      teaser: "QA rejections have tripled since new disclosure rules landed.",
+      briefWho: "Practice Lead, Audit",
+      briefQuote: "Our QA rejection rate on client files has tripled since the new ESG disclosure requirements came in six months ago. The team's been slower to adapt than I expected. I think they need a push, maybe tie a bit more of their appraisal to getting it right the first time.",
+      evidence: [
+        { tag: "Source A", title: "Performance data", points: [
+          "QA rejection rate on ESG-related sections has risen from roughly 5% to around 34% since the new requirements took effect.",
+          "Turnaround time for these files is unchanged, files are completed on schedule, they are simply sent back at review.",
+          "Rejection reasons are concentrated on ESG disclosure classification, not on other parts of the file."
+        ]},
+        { tag: "Source B", title: "Interview notes (auditors)", points: [
+          "\u201cWe know we're meant to follow the new framework. Nobody's actually walked us through it though, so we're applying judgement calls based on the old categories.\u201d",
+          "The new requirements were communicated by a single email with an attached PDF, no workshop or worked examples were provided.",
+          "Several auditors describe spending extra unpaid hours trying to interpret the new guidance themselves."
+        ]},
+        { tag: "Source C", title: "Observation notes (file review)", points: [
+          "Auditors follow the full review checklist accurately and in the right order.",
+          "Errors appear specifically where old classification categories have been replaced by new ESG categories, auditors apply the old logic to the new categories.",
+          "No sign of rushing, corner-cutting or disengagement, files show careful work throughout, built on an outdated framework."
+        ]},
+        { tag: "Source D", title: "Documentation review", points: [
+          "The rollout consisted of one internal email and a linked PDF of the regulator's guidance.",
+          "No training session, worked example, or sign-off checkpoint was built into the rollout.",
+          "The review checklist itself was never updated to reflect the new categories."
+        ]}
+      ],
+      correctRootCause: "knowledge",
+      confirmText: "The evidence triangulates on understanding, not effort or process. Rejections cluster exactly where the new framework replaced the old one, the checklist is followed correctly, and staff are already putting in extra unpaid hours trying to get it right.",
+      rootCauseConsequences: {
+        process: "The review checklist was restructured with two additional sign-off steps to catch ESG errors before they reached QA. Three months later, the rejection rate had barely moved, auditors were still applying outdated categories, just with more people confirming the same mistake.",
+        motivation: "A revised appraisal structure tied a portion of bonus to first-pass QA rate. Auditors worked longer hours trying to improve their scores, but rejection rates stayed elevated, they wanted to get it right, they simply hadn't been shown how.",
+        tooling: "A new file-tagging feature was added to flag ESG sections for extra review. It caught more errors before client delivery, but did nothing to reduce how often they occurred in the first place.",
+        leadership: "The practice lead began personally reviewing a sample of ESG sections each week to model the right approach. It surfaced the pattern faster, but with one person reviewing a sample, most files still went out with the same misapplied categories.",
+        culture: "A knowledge-sharing initiative encouraged auditors to compare notes on tricky files. It helped a little at the margins, but without a source of correct guidance to share, the group was largely comparing similarly outdated assumptions."
+      },
+      interventionIntro: "The root cause is confirmed as Knowledge. Which intervention actually addresses it?",
+      interventions: [
+        { key: "workshop", label: "Deliver structured training with a certification check", desc: "A short workshop on the new ESG categories, using worked examples, followed by a check for understanding.", correct: true,
+          consequence: "A half-day workshop walked the team through the new categories with real file examples, followed by a short certification check. Within six weeks, the ESG rejection rate fell from around 34% back to single figures, without any change to turnaround time." },
+        { key: "signoff", label: "Add extra QA sign-off stages", desc: "Introduce additional review steps to catch ESG errors before delivery.", correct: false,
+          consequence: "The extra sign-off caught more errors before delivery, but rejection rates at the first pass stayed high, and turnaround time slipped as files queued for the additional check." },
+        { key: "appraisal", label: "Tie appraisal ratings to first-pass QA rate", desc: "Make QA performance a formal part of the appraisal process.", correct: false,
+          consequence: "Auditors reported feeling scrutinised over something they didn't yet know how to fix. Error rates held steady for another quarter." },
+        { key: "tagtool", label: "Build an ESG file-tagging tool", desc: "Flag ESG sections automatically so they get extra attention.", correct: false,
+          consequence: "Tagging made errors easier to find, not less frequent. The underlying misunderstanding of the new categories remained unaddressed." }
+      ],
+      exhibit: {
+        symptom: "QA rejection rate on ESG-related file sections has roughly tripled since new disclosure requirements took effect six months ago.",
+        evidenceSignals: [
+          "Rejections concentrated specifically on ESG classification, not other file content.",
+          "Rollout was a single email and PDF, no training, workshop or certification step.",
+          "Auditors follow the review process accurately but apply outdated categories to the new requirement.",
+          "No evidence of rushing or disengagement, extra unpaid hours suggest high effort, not low motivation."
+        ],
+        rootCauseLabel: "Knowledge",
+        rootCauseExplain: "A gap in understanding the new framework, not a process, motivation or tooling gap.",
+        rejected: [
+          { label: "Process", why: "The checklist and review sequence were followed correctly throughout." },
+          { label: "Motivation", why: "Auditors invested extra unpaid effort trying to get the new classification right." },
+          { label: "Tooling", why: "Existing systems and templates weren't a barrier to correct classification." }
+        ],
+        recommendedIntervention: "Deliver a structured training session with worked examples and a short certification check on the new ESG categories, rather than adding review layers or incentive changes.",
+        indicators: [
+          "ESG-related QA rejection rate, target return to baseline within one quarter.",
+          "Time spent per file on ESG sections.",
+          "Proportion of auditors passing the certification check."
+        ]
+      }
+    },
+
+    {
+      id: "bd",
+      team: "Business Development",
+      title: "The empty pipeline",
+      teaser: "CRM logging compliance is stuck at 20% after launch.",
+      briefWho: "Head of Business Development",
+      briefQuote: "We rolled out a new CRM eight months ago specifically so we'd have visibility of the pipeline. Logging compliance is sitting at 20%. Deals are falling through the cracks because nobody can see what's actually in play. I assumed the tool would have bedded in by now.",
+      evidence: [
+        { tag: "Source A", title: "Performance data", points: [
+          "CRM logging compliance for client contact and pipeline stages sits at roughly 20%, largely unchanged since launch.",
+          "System login and usage data shows the team accesses the CRM daily, for time entry and expense claims, both of which are checked.",
+          "Certification completion for CRM training stands at 100% across the team."
+        ]},
+        { tag: "Source B", title: "Interview notes (business development staff)", points: [
+          "\u201cI know exactly how to log a contact, it takes about ninety seconds. My bonus is tied to hours billed, not pipeline hygiene, so it's the first thing that gets skipped when I'm busy.\u201d",
+          "\u201cNobody's ever asked me about what I have or haven't logged. It's not reviewed.\u201d",
+          "Several staff describe logging being the first task dropped under time pressure, with no consequence noticed."
+        ]},
+        { tag: "Source C", title: "Observation notes (shadowing)", points: [
+          "Staff move confidently through the CRM interface for tasks that are checked, no hesitation or errors.",
+          "Discretionary logging is skipped entirely during two full days of shadowing, even when time was available between meetings.",
+          "One staff member logged a contact only after being told a client was in the room."
+        ]},
+        { tag: "Source D", title: "Incentive and process documentation", points: [
+          "Current bonus structure is based entirely on billable hours, no measure of pipeline data quality appears in appraisal criteria.",
+          "No manager currently reviews CRM logging rates as part of one-to-ones or team meetings."
+        ]}
+      ],
+      correctRootCause: "motivation",
+      confirmText: "The evidence triangulates on incentives, not skill or tooling. Certification is complete, the team is fluent with the CRM for anything that's checked, and staff say directly that logging isn't measured or rewarded.",
+      rootCauseConsequences: {
+        knowledge: "A refresher CRM training session was delivered. Certification pass rates stayed at 100%, exactly where they'd already been, and logging compliance was unchanged three months later.",
+        process: "Logging was added as a mandatory step before a deal could move stage in the CRM. Compliance rose briefly to force the entry, then staff began entering minimal, low-quality placeholder notes just to clear the gate.",
+        tooling: "A simplified one-click logging feature was added to reduce friction. Usage data showed staff still accessing it for checked tasks only, logging compliance barely moved.",
+        leadership: "The BD lead began sending a monthly reminder email about the importance of pipeline visibility. Compliance ticked up for a week after each email, then dropped back to its previous level.",
+        culture: "A team session on pipeline ownership generated good discussion, but with billable hours the only thing actually measured and rewarded, behaviour reverted within a fortnight."
+      },
+      interventionIntro: "The root cause is confirmed as Motivation. Which intervention actually addresses it?",
+      interventions: [
+        { key: "training", label: "Deliver refresher CRM training", desc: "Run the team through the CRM features again to reinforce logging habits.", correct: false,
+          consequence: "Certification stayed at 100%. Logging compliance was unchanged, the team had never lacked the skill." },
+        { key: "gate", label: "Make logging a mandatory gate", desc: "Require a logged entry before a deal can move to the next pipeline stage.", correct: false,
+          consequence: "Compliance rose on paper, but entry quality dropped, staff met the gate with minimal placeholder notes rather than genuine pipeline detail." },
+        { key: "incentive", label: "Realign recognition with data quality", desc: "Tie a portion of recognition or targets to CRM logging completeness, alongside billable hours.", correct: true,
+          consequence: "With a modest portion of quarterly recognition tied to logging completeness, compliance rose from 20% to over 70% within two months, and it held, staff were capable and simply responding to what was actually measured." },
+        { key: "simplify", label: "Simplify the CRM interface", desc: "Reduce the number of clicks needed to log a contact.", correct: false,
+          consequence: "Friction wasn't the barrier, usage data showed staff already moved easily through the interface for tasks that were checked. Compliance stayed flat." }
+      ],
+      exhibit: {
+        symptom: "CRM logging compliance stuck at roughly 20% eight months after launch, undermining pipeline visibility.",
+        evidenceSignals: [
+          "Certification completion sits at 100% across the team.",
+          "Daily CRM use for checked tasks rules out an access or skill barrier.",
+          "Staff explicitly link the drop-off to a bonus structure that rewards only billable hours.",
+          "No manager currently reviews logging rates."
+        ],
+        rootCauseLabel: "Motivation",
+        rootCauseExplain: "A misalignment between what's measured and rewarded and the desired behaviour, not a skills or tooling gap.",
+        rejected: [
+          { label: "Knowledge", why: "100% certification and confident CRM use elsewhere rule out a skills gap." },
+          { label: "Tooling", why: "The interface is used fluently for tasks that are checked, it isn't the barrier." },
+          { label: "Process", why: "A mandatory gate risks compliance theatre rather than genuine adoption, as later confirmed." }
+        ],
+        recommendedIntervention: "Tie a portion of recognition or targets to CRM data quality alongside billable hours, rather than adding training, gates, or interface changes.",
+        indicators: [
+          "CRM logging compliance rate.",
+          "Pipeline stage accuracy, spot-checked against actual deal status.",
+          "Staff sentiment on incentive fairness."
+        ]
+      }
+    },
+
+    {
+      id: "onboarding",
+      team: "Client Onboarding",
+      title: "The duplicate document requests",
+      teaser: "Onboarding turnaround has more than doubled in two quarters.",
+      briefWho: "Practice Lead, Client Onboarding",
+      briefQuote: "New client onboarding used to take five working days. It's now taking closer to twelve, and we've had three clients complain about being asked for the same documents twice. The team knows the checklist inside out, I don't think this is a training issue.",
+      evidence: [
+        { tag: "Source A", title: "Performance data", points: [
+          "Average onboarding turnaround has risen from 5 to roughly 12 working days over two quarters.",
+          "Document request volume per client has increased by around 60%, largely repeat requests for items already submitted.",
+          "System outage tickets for the client management platform have risen sharply over the same period."
+        ]},
+        { tag: "Source B", title: "Interview notes (onboarding staff)", points: [
+          "\u201cWe know the checklist cold. The problem is the system doesn't show us documents a client already submitted for a related matter, so we sometimes ask for the same thing twice without realising.\u201d",
+          "\u201cIt crashes most days around midday, and when it does we lose whatever wasn't saved and have to start that section again.\u201d",
+          "Staff describe raising the cross-matter visibility gap and the outages with IT repeatedly over the past several months."
+        ]},
+        { tag: "Source C", title: "Observation notes (shadowing)", points: [
+          "Staff follow the checklist accurately and in full, no shortcuts or missed steps observed.",
+          "Two system crashes occurred during a single day of shadowing, each requiring manual re-entry of unsaved data.",
+          "No case observed of a staff member unsure what document to request, only of the system failing to show what had already been provided elsewhere."
+        ]},
+        { tag: "Source D", title: "IT ticket log", points: [
+          "Recurring outage tickets for the client platform, several open and unresolved for more than two months.",
+          "A request for a cross-matter document repository feature has been logged three times over the past year and has not been actioned, cited as a budget constraint."
+        ]}
+      ],
+      correctRootCause: "tooling",
+      confirmText: "The evidence triangulates on the system itself, not the people using it. The checklist is followed in full, staff have flagged the outages and visibility gap repeatedly, and the platform is failing daily regardless of effort.",
+      rootCauseConsequences: {
+        knowledge: "A refresher session on the onboarding checklist was delivered. Turnaround times were unchanged, staff already knew the checklist in full, the bottleneck was the system underneath it.",
+        process: "An additional manual cross-check step was added to catch duplicate document requests before they went out. It reduced repeat requests slightly, but added time to every file and did nothing about the daily system crashes.",
+        motivation: "A recognition scheme for fastest onboarding times was introduced. Staff who'd already been working carefully around a failing system reported the change felt tone-deaf, and turnaround times stayed elevated.",
+        leadership: "The onboarding lead escalated the issue in leadership meetings and secured a verbal commitment to look into it. Six weeks on, the same outage tickets sat unresolved and turnaround times hadn't moved.",
+        culture: "A workshop on client experience mindset ran across the team. Staff engagement was already high going in, and the session didn't touch the system issues actually causing the delays."
+      },
+      interventionIntro: "The root cause is confirmed as Tooling. Which intervention actually addresses it?",
+      interventions: [
+        { key: "training", label: "Refresher training on the onboarding checklist", desc: "Reinforce the existing checklist and document requirements.", correct: false,
+          consequence: "Turnaround times held steady. The checklist was never the issue, the system underneath it was." },
+        { key: "crosscheck", label: "Add a manual cross-check step", desc: "Insert a review step to catch duplicate document requests before they're sent.", correct: false,
+          consequence: "Repeat requests fell slightly, but every file now took longer, and the underlying system crashes continued unaddressed." },
+        { key: "fixplatform", label: "Fix the platform and add cross-matter visibility", desc: "Resolve the recurring outages and build a document repository visible across a client's matters.", correct: true,
+          consequence: "Once the outages were resolved and staff could see documents already submitted across a client's matters, repeat requests dropped sharply and turnaround returned to close to five days within six weeks." },
+        { key: "recognition", label: "Launch a recognition scheme for onboarding speed", desc: "Reward the fastest, cleanest onboarding completions.", correct: false,
+          consequence: "Staff were already trying hard against a failing system. Recognition for speed didn't change what the system allowed them to do, turnaround stayed elevated." }
+      ],
+      exhibit: {
+        symptom: "Onboarding turnaround has more than doubled, with repeat document requests causing client complaints.",
+        evidenceSignals: [
+          "Staff apply the checklist accurately and completely.",
+          "System crashes recur daily, each requiring manual re-entry.",
+          "No cross-matter visibility of previously submitted client documents.",
+          "IT requests for a fix logged repeatedly without action."
+        ],
+        rootCauseLabel: "Tooling",
+        rootCauseExplain: "System limitations, instability and lack of cross-matter visibility, not a knowledge, process or motivation gap.",
+        rejected: [
+          { label: "Knowledge", why: "The checklist is followed fully and correctly." },
+          { label: "Process", why: "The sequence of steps isn't the problem, an added check only slows things further." },
+          { label: "Motivation", why: "Staff have flagged the issue themselves and kept working carefully around it." }
+        ],
+        recommendedIntervention: "Resolve the platform outages and build cross-matter document visibility, rather than adding training, process steps, or incentives.",
+        indicators: [
+          "Onboarding turnaround time.",
+          "Repeat document request rate.",
+          "Unresolved outage ticket count."
+        ]
+      }
+    }
+  ];
+
+  var state = {};
+  var currentCaseId = null;
+  var completed = {};
+
+  var screens = ["index", "brief", "evidence", "classify", "intervention", "exhibit", "portfolio"];
+  var stageScreens = ["brief", "evidence", "classify", "intervention", "exhibit"];
+  var stageNames = ["Brief", "Evidence", "Diagnosis", "Intervention", "Summary"];
+
+  function getCase(id) {
+    var found = null;
+    CASES.forEach(function (c) { if (c.id === id) found = c; });
+    return found;
+  }
+
+  function showScreen(name) {
+    screens.forEach(function (s) {
+      document.getElementById("screen-" + s).classList.toggle("active", s === name);
+    });
+    var progressWrap = document.getElementById("progressWrap");
+    var stageIdx = stageScreens.indexOf(name);
+    if (stageIdx === -1) {
+      progressWrap.classList.add("hidden");
+    } else {
+      progressWrap.classList.remove("hidden");
+      document.getElementById("stageLabel").textContent = "Stage " + (stageIdx + 1) + " of 5: " + stageNames[stageIdx];
+      document.getElementById("caseLabel").textContent = getCase(currentCaseId).team;
+      for (var i = 1; i <= 5; i++) {
+        document.getElementById("seg" + i).style.width = (i <= stageIdx + 1) ? "100%" : "0%";
+      }
+    }
+    var heading = document.getElementById("screen-" + name).querySelector("h1");
+    if (heading) { heading.setAttribute("tabindex", "-1"); heading.focus(); }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ---------- INDEX ----------
+  function renderIndex() {
+    var grid = document.getElementById("caseGrid");
+    grid.innerHTML = "";
+    CASES.forEach(function (c) {
+      var done = completed[c.id];
+      var card = document.createElement("button");
+      card.className = "case-card";
+      card.type = "button";
+      var resultHtml = "";
+      if (done) {
+        resultHtml =
+          '<div class="cc-result"><strong>Root cause:</strong> ' + c.exhibit.rootCauseLabel +
+          '<br><strong>Intervention:</strong> ' + c.exhibit.recommendedIntervention.split(",")[0] + '</div>';
+      }
+      card.innerHTML =
+        '<div class="cc-top">' +
+          '<div><div class="cc-team">' + c.team + '</div><div class="cc-title">' + c.title + '</div></div>' +
+          '<span class="status-badge ' + (done ? "complete" : "pending") + '">' + (done ? "Complete" : "Not started") + '</span>' +
+        '</div>' +
+        '<div class="cc-teaser">' + c.teaser + '</div>' +
+        resultHtml;
+      card.addEventListener("click", function () { startCase(c.id); });
+      grid.appendChild(card);
+    });
+    var allDone = CASES.every(function (c) { return completed[c.id]; });
+    document.getElementById("portfolioBanner").style.display = allDone ? "block" : "none";
+  }
+
+  function startCase(id) {
+    currentCaseId = id;
+    state = { viewed: [false, false, false, false] };
+    var c = getCase(id);
+
+    document.getElementById("briefEyebrow").textContent = c.team + ": the brief";
+    document.getElementById("briefHeading").textContent = c.title;
+    document.getElementById("briefBody").innerHTML =
+      '<div class="quote-card"><p>"' + c.briefQuote + '"</p><p class="who">' + c.briefWho + '</p></div>' +
+      '<p>Before recommending anything, your job is to diagnose the actual root cause. The stakeholder has already formed a theory. Your evidence might agree with it, or it might not.</p>';
+
+    renderEvidence(c);
+    renderClassify(c);
+    renderIntervention(c);
+
+    showScreen("brief");
+  }
+
+  document.getElementById("toEvidence").addEventListener("click", function () { showScreen("evidence"); });
+
+  // ---------- EVIDENCE ----------
+  function renderEvidence(c) {
+    var tracker = document.getElementById("dossierTracker");
+    tracker.innerHTML = "";
+    c.evidence.forEach(function (item, i) {
+      var chip = document.createElement("span");
+      chip.className = "dossier-chip";
+      chip.setAttribute("data-chip", i);
+      chip.textContent = item.title;
+      tracker.appendChild(chip);
+    });
+
+    var list = document.getElementById("evidenceList");
+    list.innerHTML = "";
+    c.evidence.forEach(function (item, i) {
+      var wrap = document.createElement("div");
+      wrap.className = "evidence-item";
+      wrap.innerHTML =
+        '<button class="evidence-trigger" aria-expanded="false" aria-controls="ev-body-' + i + '" data-idx="' + i + '">' +
+          '<span class="tag">' + item.tag + '</span>' +
+          '<span>' + item.title + '</span>' +
+          '<span class="check" aria-hidden="true">&#10003;</span>' +
+          '<span class="sr-only" id="ev-status-' + i + '">Not yet reviewed</span>' +
+          '<span class="chev" aria-hidden="true">&#9660;</span>' +
+        '</button>' +
+        '<div class="evidence-body" id="ev-body-' + i + '">' +
+          '<ul>' + item.points.map(function (p) { return '<li>' + p + '</li>'; }).join("") + '</ul>' +
+        '</div>';
+      list.appendChild(wrap);
+    });
+
+    document.getElementById("evidenceGate").innerHTML = "";
+  }
+
+  document.getElementById("evidenceList").addEventListener("click", function (e) {
+    var trigger = e.target.closest(".evidence-trigger");
+    if (!trigger) return;
+    var idx = parseInt(trigger.getAttribute("data-idx"), 10);
+    var body = document.getElementById("ev-body-" + idx);
+    var isOpen = body.classList.contains("open");
+    body.classList.toggle("open", !isOpen);
+    trigger.setAttribute("aria-expanded", String(!isOpen));
+    if (!isOpen) {
+      trigger.classList.add("viewed");
+      state.viewed[idx] = true;
+      document.getElementById("ev-status-" + idx).textContent = "Reviewed";
+      var chip = document.querySelector('[data-chip="' + idx + '"]');
+      if (chip) chip.classList.add("done");
+    }
+  });
+
+  document.getElementById("toClassify").addEventListener("click", function () {
+    var viewedCount = state.viewed.filter(Boolean).length;
+    var gate = document.getElementById("evidenceGate");
+    if (viewedCount < 3) {
+      gate.innerHTML =
+        '<div class="feedback warn">' +
+          '<div class="ftitle">Only ' + viewedCount + ' of 4 sources reviewed</div>' +
+          '<p style="margin-bottom:12px;">Classifying now risks a premature diagnosis, this is exactly how interventions get chosen under time pressure before the full picture is in. You can continue, or go back and finish the case file.</p>' +
+          '<button class="btn accent" id="proceedAnyway">Proceed anyway</button>' +
+        '</div>';
+      gate.querySelector("#proceedAnyway").addEventListener("click", function () { showScreen("classify"); });
+    } else {
+      showScreen("classify");
+    }
+  });
+
+  // ---------- CLASSIFY ----------
+  function renderClassify(c) {
+    var grid = document.getElementById("classifyGrid");
+    grid.innerHTML = "";
+    document.getElementById("classifyFeedback").innerHTML = "";
+    ROOT_CAUSE_DEFS.forEach(function (rc) {
+      var btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.type = "button";
+      btn.innerHTML = '<span class="label">' + rc.label + '</span><span class="desc">' + rc.desc + '</span>';
+      btn.addEventListener("click", function () { handleClassify(c, rc, grid); });
+      grid.appendChild(btn);
+    });
+  }
+
+  function handleClassify(c, rc, grid) {
+    var feedback = document.getElementById("classifyFeedback");
+    if (rc.key === c.correctRootCause) {
+      feedback.innerHTML =
+        '<div class="feedback good">' +
+          '<div class="ftitle">' + rc.label + ' confirmed</div>' +
+          '<p>' + c.confirmText + '</p>' +
+          '<button class="btn" id="toIntervention">Continue to intervention</button>' +
+        '</div>';
+      feedback.querySelector("#toIntervention").addEventListener("click", function () { showScreen("intervention"); });
+      Array.prototype.forEach.call(grid.children, function (btn) { btn.disabled = true; });
+    } else {
+      feedback.innerHTML =
+        '<div class="feedback warn">' +
+          '<div class="ftitle">Intervention launched on this basis, here is what happened</div>' +
+          '<p>' + c.rootCauseConsequences[rc.key] + '</p>' +
+          '<button class="btn secondary" id="reconsider">Reconsider the classification</button>' +
+        '</div>';
+      feedback.querySelector("#reconsider").addEventListener("click", function () { feedback.innerHTML = ""; });
+    }
+  }
+
+  // ---------- INTERVENTION ----------
+  function renderIntervention(c) {
+    document.getElementById("interventionIntro").textContent = c.interventionIntro;
+    var grid = document.getElementById("interventionGrid");
+    grid.innerHTML = "";
+    document.getElementById("interventionFeedback").innerHTML = "";
+    c.interventions.forEach(function (iv) {
+      var btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.type = "button";
+      btn.innerHTML = '<span class="label">' + iv.label + '</span><span class="desc">' + iv.desc + '</span>';
+      btn.addEventListener("click", function () { handleIntervention(c, iv, grid); });
+      grid.appendChild(btn);
+    });
+  }
+
+  function handleIntervention(c, iv, grid) {
+    var feedback = document.getElementById("interventionFeedback");
+    if (iv.correct) {
+      feedback.innerHTML =
+        '<div class="feedback good">' +
+          '<div class="ftitle">This addresses the actual bottleneck</div>' +
+          '<p>' + iv.consequence + '</p>' +
+          '<button class="btn" id="toExhibit">View the capability gap summary</button>' +
+        '</div>';
+      feedback.querySelector("#toExhibit").addEventListener("click", function () {
+        completed[c.id] = true;
+        renderExhibit(c);
+        showScreen("exhibit");
+      });
+      Array.prototype.forEach.call(grid.children, function (btn) { btn.disabled = true; });
+    } else {
+      feedback.innerHTML =
+        '<div class="feedback warn">' +
+          '<div class="ftitle">Intervention launched on this basis, here is what happened</div>' +
+          '<p>' + iv.consequence + '</p>' +
+          '<button class="btn secondary" id="reconsiderIv">Reconsider the intervention</button>' +
+        '</div>';
+      feedback.querySelector("#reconsiderIv").addEventListener("click", function () { feedback.innerHTML = ""; });
+    }
+  }
+
+  // ---------- EXHIBIT ----------
+  function renderExhibit(c) {
+    var ex = c.exhibit;
+    var html =
+      '<div class="exhibit">' +
+        '<div class="exhibit-head">' +
+          '<div class="exhibit-eyebrow">Alderney &amp; Associates, ' + c.team + '</div>' +
+          '<h2>Capability Gap Summary</h2>' +
+        '</div>' +
+        '<div class="exhibit-body">' +
+          '<div class="exhibit-row"><div class="row-label">Symptom</div><div>' + ex.symptom + '</div></div>' +
+          '<div class="exhibit-row"><div class="row-label">Evidence signals</div><div><ul>' +
+            ex.evidenceSignals.map(function (p) { return '<li>' + p + '</li>'; }).join("") +
+          '</ul></div></div>' +
+          '<div class="exhibit-row"><div class="row-label">Root cause</div><div><span class="pill">' + ex.rootCauseLabel + '</span> ' + ex.rootCauseExplain + '</div></div>' +
+          '<div class="exhibit-row"><div class="row-label">Ruled out</div><div>' +
+            ex.rejected.map(function (r) { return '<div class="rejected-item"><strong>' + r.label + '</strong> <span class="why">' + r.why + '</span></div>'; }).join("") +
+          '</div></div>' +
+          '<div class="exhibit-row"><div class="row-label">Recommended intervention</div><div>' + ex.recommendedIntervention + '</div></div>' +
+          '<div class="exhibit-row"><div class="row-label">Indicators to track</div><div><ul>' +
+            ex.indicators.map(function (p) { return '<li>' + p + '</li>'; }).join("") +
+          '</ul></div></div>' +
+        '</div>' +
+      '</div>';
+    document.getElementById("exhibitContent").innerHTML = html;
+  }
+
+  document.getElementById("backToIndex").addEventListener("click", function () {
+    renderIndex();
+    showScreen("index");
+  });
+
+  // ---------- PORTFOLIO ----------
+  document.getElementById("toPortfolio").addEventListener("click", function () {
+    var body = document.getElementById("portfolioTableBody");
+    body.innerHTML = "";
+    CASES.forEach(function (c) {
+      var row = document.createElement("tr");
+      row.innerHTML =
+        '<td><strong>' + c.team + '</strong><br>' + c.title + '</td>' +
+        '<td><span class="pill">' + c.exhibit.rootCauseLabel + '</span></td>' +
+        '<td>' + c.exhibit.recommendedIntervention + '</td>';
+      body.appendChild(row);
+    });
+    showScreen("portfolio");
+  });
+
+  document.getElementById("portfolioBack").addEventListener("click", function () {
+    renderIndex();
+    showScreen("index");
+  });
+
+  // ---------- INIT ----------
+  renderIndex();
+})();
+</script>
+
+</body>
+</html>
